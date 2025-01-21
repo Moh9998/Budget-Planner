@@ -1,8 +1,11 @@
+
+using BlazorApp1;
 using Currency;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace BlazorApp1
+namespace DataLayer
 {
     public class Program
     {
@@ -14,6 +17,7 @@ namespace BlazorApp1
             builder.Services.AddScoped<CurrencyConverterService>( );
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+           
 
             await builder.Build().RunAsync();
         }
