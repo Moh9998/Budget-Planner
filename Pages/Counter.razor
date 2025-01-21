@@ -1,0 +1,193 @@
+﻿@page "/counter"
+
+<PageTitle>Budget Planner</PageTitle>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="title">Budget Planner</h1>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Monthly Income</label>
+                <InputText @bind-Value="monthlyIncome" class="form-control" placeholder="Enter your monthly income" />
+            </div>
+
+            <h3>Expenses</h3>
+
+            @if (showExpenseModal)
+            {
+                <ExpenseInput OnAddExpense="OnAddExpense"
+                              OnClose="CloseExpenseModal" />
+            }
+
+            <ul class="list-group mt-3">
+                @foreach (var expense in expenses)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>@expense.Name</span>
+                        <span class="badge bg-secondary rounded-pill">@expense.Amount</span>
+                    </li>
+                }
+            </ul>
+
+            <div class="form-group mt-3">
+                <InputCheckbox @bind-Value="isYearlyCalculation" class="form-check-input" />
+                <label class="form-check-label">Calculate for a Year</label>
+            </div>
+
+            <button class="btn btn-primary btn-block mt-3" @onclick="CalculateBudget">Calculate</button>
+
+            <button class="btn btn-secondary mt-3" @onclick="ShowExpenseModal">Add Expense</button>
+
+            @if (calculationCompleted)
+            {
+                <p class="result mt-3">@result</p>
+                <p class="expenses">@totalExpenses</p>
+            }
+        </div>
+    </div>
+</div>
+
+@if (showExpenseModal)
+{
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" id="draggable-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addExpenseModalLabel">Add Expense</h5>
+                    <button type="button" class="btn-close bg-danger" @onclick="CloseExpenseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="expenseName">Name</label>
+                        <InputText @bind-Value="expenseName" class="form-control" id="expenseName" placeholder="Enter expense name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseAmount">Amount</label>
+                        <InputText @bind-Value="expenseAmount" class="form-control" id="expenseAmount" placeholder="Enter expense amount" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" @onclick="CloseExpenseModal">Close</button>
+                    <button type="button" class="btn btn-primary" @onclick="OnAddExpense">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('draggable-modal');
+        var header = modal.querySelector('.modal-header');
+
+        header.style.cursor = 'move';
+
+        header.addEventListener('mousedown', function (event) {
+            var shiftX = event.clientX - modal.getBoundingClientRect().left;
+            var shiftY = event.clientY - modal.getBoundingClientRect().top;
+
+            function moveAt(pageX, pageY) {
+                modal.style.left = pageX - shiftX + 'px';
+                modal.style.top = pageY - shiftY + 'px';
+            }
+
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+
+            header.addEventListener('mouseup', function () {
+                document.removeEventListener('mousemove', onMouseMove);
+                header.onmouseup = null;
+            });
+
+            header.ondragstart = function () {
+                return false;
+            };
+        });
+    });
+</script>
+
+@code {
+    private string monthlyIncome;
+    private string result;
+    private string totalExpenses;
+    private bool isYearlyCalculation = false;
+    private bool showExpenseModal = false;
+    private bool calculationCompleted = false;  // Flag for calculation completion
+    private string expenseName;
+    private string expenseAmount;
+    private string errorMessage;
+    private List<Expense> expenses = new();
+
+    private void ShowExpenseModal()
+    {
+        showExpenseModal = true;
+    }
+
+    private void CloseExpenseModal()
+    {
+        showExpenseModal = false;
+    }
+
+    private void OnAddExpense()
+    {
+        if (decimal.TryParse(expenseAmount, out decimal amount) && !string.IsNullOrWhiteSpace(expenseName))
+        {
+            var expense = new Expense { Name = expenseName, Amount = amount };
+            expenses.Add(expense);
+            showExpenseModal = false; // Hide the modal after adding the expense
+            expenseName = string.Empty; // Clear input fields
+            expenseAmount = string.Empty;
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Please enter a valid name and amount.";
+        }
+    }
+
+    private void CalculateBudget()
+    {
+        if (!decimal.TryParse(monthlyIncome, out decimal income) || income < 0)
+        {
+            result = "Please enter a valid positive number for income.";
+            totalExpenses = "-";
+            calculationCompleted = false;  // Ensure calculation flag is false
+            return;
+        }
+
+        decimal totalExpenseAmount = expenses.Sum(e => e.Amount);
+        decimal balance;
+
+        if (isYearlyCalculation)
+        {
+            balance = (income - totalExpenseAmount) * 12;
+            result = $"Your yearly budget balance is {balance:C}";
+            totalExpenses = $"Your yearly expenses are {totalExpenseAmount * 12:C}";
+        }
+        else
+        {
+            balance = income - totalExpenseAmount;
+            result = $"Your monthly budget balance is: {balance:C}";
+            totalExpenses = $"Your monthly expenses are: {totalExpenseAmount:C}";
+        }
+
+        calculationCompleted = true;  // Set the flag to true when the calculation is done
+    }
+
+    public class Expense
+    {
+        public string Name { get; set; }
+        public decimal Amount { get; set; }
+    }
+}

@@ -1,0 +1,67 @@
+﻿@page "/weather"
+@inject Currency.CurrencyConverterService CurrencyConverterService
+
+<div class="container mt-5">
+    <div class="rounded p-4 shadow-sm bg-body-secondary">
+        <h1 class="title text-center mb-4 title">
+            Currency Converter
+        </h1>
+        <div class="form-group mb-3">
+            <label for="amount">Amount</label>
+            <InputText @bind-Value="amount" class="form-control" id="amount" placeholder="Enter amount" />
+        </div>
+        <div class="form-group mb-3">
+            <label for="fromCurrency">From</label>
+            <InputSelect @bind-Value="fromCurrency" class="form-control" id="fromCurrency">
+                @foreach (var currency in currencies)
+                {
+                    <option value="@currency">@currency</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="form-group mb-3">
+            <label for="toCurrency">To</label>
+            <InputSelect @bind-Value="toCurrency" class="form-control" id="toCurrency">
+                @foreach (var currency in currencies)
+                {
+                    <option value="@currency">@currency</option>
+                }
+            </InputSelect>
+        </div>
+        <button class="btn btn-primary w-100" @onclick="ConvertCurrency">Convert</button>
+        @if (!string.IsNullOrEmpty(result))
+        {
+            <div class="alert alert-info mt-3 text-center">
+                @result
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string amount;
+    private string fromCurrency = "USD"; // Default value
+    private string toCurrency = "EUR"; // Default value
+    private string result;
+    private List<string> currencies = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currencies = await CurrencyConverterService.GetCurrenciesAsync();
+    }
+
+    private async Task ConvertCurrency()
+    {
+        if (decimal.TryParse(amount, out decimal amountValue) && !string.IsNullOrWhiteSpace(fromCurrency) && !string.IsNullOrWhiteSpace(toCurrency))
+        {
+            decimal conversionRate = await CurrencyConverterService.GetConversionRateAsync(fromCurrency, toCurrency);
+            decimal convertedAmount = amountValue * conversionRate;
+            result = $"{amountValue} {fromCurrency} is equal to {convertedAmount} {toCurrency}";
+        }
+        else
+        {
+            result = "Please enter a valid amount and select currencies.";
+        }
+    }
+}
+

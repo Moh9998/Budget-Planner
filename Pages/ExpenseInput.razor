@@ -1,0 +1,38 @@
+﻿@code {
+    [Parameter] public EventCallback<Expense> OnAddExpense { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string expenseName;
+    private string expenseAmount;
+    private string errorMessage;
+
+    private async Task AddExpense()
+    {
+        if (decimal.TryParse(expenseAmount, out decimal amount) && !string.IsNullOrWhiteSpace(expenseName))
+        {
+            // Create the expense object and pass it to the parent
+            var expense = new Expense { Name = expenseName, Amount = amount };
+
+            // Invoke the callback to add the expense to the parent list
+            await OnAddExpense.InvokeAsync(expense);
+
+            // Reset input fields
+            expenseName = string.Empty;
+            expenseAmount = string.Empty;
+            errorMessage = string.Empty;
+
+            // Close the modal
+            await OnClose.InvokeAsync();
+        }
+        else
+        {
+            errorMessage = "Please enter a valid name and amount.";
+        }
+    }
+
+    public class Expense
+    {
+        public string Name { get; set; }
+        public decimal Amount { get; set; }
+    }
+}

@@ -1,0 +1,52 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="title">Income Calculation</h1>
+        </div>
+        <div class="card-body">
+            <div class="input-group">
+                <InputText @bind-Value="incomeAmount" class="form-control" placeholder="Enter your income" />
+            </div>
+            <br />
+            <div class="form-check">
+                <InputCheckbox @bind-Value="isYearlyCalculation" class="form-check-input" />
+                <label class="form-check-label">Calculate Monthly from Yearly</label>
+            </div>
+            <br />
+            <button class="btn btn-primary btn-block" @onclick="CalculateIncome">Calculate</button>
+
+            <p class="result">@result</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string incomeAmount;
+    private string result;
+    private bool isYearlyCalculation = false;
+
+    private void CalculateIncome()
+    {
+        if (string.IsNullOrEmpty(incomeAmount) || !decimal.TryParse(incomeAmount, out decimal incomeValue) || incomeValue < 0)
+        {
+            result = "Please enter a valid positive income.";
+        }
+        else
+        {
+            if (isYearlyCalculation)
+            {
+                decimal monthlyIncome = incomeValue / 12;
+                result = $"Your monthly income is {monthlyIncome:C}";
+            }
+            else
+            {
+                decimal yearlyIncome = incomeValue * 12;
+                result = $"Your yearly income is {yearlyIncome:C}";
+            }
+        }
+    }
+}
